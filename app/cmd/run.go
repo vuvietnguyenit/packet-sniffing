@@ -28,5 +28,4 @@ func init() {
 }
 
 func runProgram() {
-
 }
