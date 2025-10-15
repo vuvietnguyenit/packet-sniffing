@@ -4,6 +4,7 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	appflag "git.itim.vn/docker/mysql-connection-trace/app/flag"
 	"git.itim.vn/docker/mysql-connection-trace/app/internal/ebpf"
 	"github.com/spf13/cobra"
 )
@@ -25,7 +26,7 @@ to quickly create a Cobra application.`,
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-	runCmd.Flags().Int16P("port", "p", 3306, "MySQL server port you want to trace")
+	runCmd.PersistentFlags().Int16VarP(&appflag.Port, "port", "p", 3306, "MySQL server port you want to trace")
 }
 
 func runProgram() {

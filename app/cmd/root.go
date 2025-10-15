@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 
+	appflag "git.itim.vn/docker/mysql-connection-trace/app/flag"
 	"github.com/cilium/ebpf/rlimit"
 	"github.com/spf13/cobra"
 )
@@ -21,20 +22,18 @@ examples and usage of using your application. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	PreRunE: func(cmd *cobra.Command, args []string) error {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Default level = INFO
+		level := slog.LevelInfo
+		if appflag.Verbose {
+			level = slog.LevelDebug
+		}
 		logger := slog.New(
 			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-				Level: slog.LevelInfo, // global level
+				Level: level, // global level
 			}),
 		)
 		slog.SetDefault(logger)
-		verbose, err := cmd.Flags().GetBool("verbose")
-		if err != nil {
-			return err
-		}
-		if verbose {
-			slog.SetLogLoggerLevel(slog.LevelDebug)
-		}
 		if err := rlimit.RemoveMemlock(); err != nil {
 			return err
 		} else {
@@ -54,5 +53,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolP("verbose", "v", false, "verbose output print")
+	rootCmd.PersistentFlags().BoolVarP(&appflag.Verbose, "verbose", "v", false, "verbose output print")
 }
