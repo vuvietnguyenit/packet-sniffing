@@ -1,6 +1,10 @@
 package utils
 
-import "fmt"
+import (
+	"encoding/binary"
+	"fmt"
+	"net"
+)
 
 type MySQLPayload []byte
 
@@ -39,4 +43,10 @@ func ParseMySQLPacket(data []byte) (*MySQLPacket, error) {
 		Payload:       payload,
 	}, nil
 
+}
+
+func IntToIP(ip uint32) net.IP {
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b, ip)
+	return net.IPv4(b[0], b[1], b[2], b[3])
 }
