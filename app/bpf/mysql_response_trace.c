@@ -24,9 +24,6 @@ struct {
   __uint(type, BPF_MAP_TYPE_RINGBUF);
   __uint(max_entries, 1 << 24); // 16 MB buffer
 } events SEC(".maps");
-
-// Define your port filter here or set dynamically
-
 static __always_inline void send_mysql_event(__u32 saddr, __u32 daddr,
                                              __u16 sport, __u16 dport,
                                              const struct iovec *pack,
@@ -84,9 +81,7 @@ int BPF_KPROBE(tcp_sendmsg, struct sock *sk, struct msghdr *msg, size_t size) {
     return 0;
 
   bpf_probe_read_user(mysql_err_buf_check, sizeof(mysql_err_buf_check), iovp);
-
   if (contains_ff(mysql_err_buf_check)) {
-
     send_mysql_event(data.saddr, data.daddr, data.sport, data.dport, iovp,
                      data.size);
   }
