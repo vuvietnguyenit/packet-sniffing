@@ -4,8 +4,8 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	appflag "git.itim.vn/docker/mysql-connection-trace/app/flag"
-	"git.itim.vn/docker/mysql-connection-trace/app/internal/ebpf"
+	appflag "git.itim.vn/docker/mysql-response-trace/app/flag"
+	"git.itim.vn/docker/mysql-response-trace/app/internal/ebpf"
 	"github.com/spf13/cobra"
 )
 

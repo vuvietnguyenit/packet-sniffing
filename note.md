@@ -1,6 +1,6 @@
 command line flag:
 
-mysql-connection-trace run --port 3306 -v
+mysql-response-trace run --port 3306 -v
 
 -> -verbose log in root cmd
 

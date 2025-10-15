@@ -12,8 +12,8 @@ import (
 	"syscall"
 	"time"
 
-	appflag "git.itim.vn/docker/mysql-connection-trace/app/flag"
-	"git.itim.vn/docker/mysql-connection-trace/app/internal/utils"
+	appflag "git.itim.vn/docker/mysql-response-trace/app/flag"
+	"git.itim.vn/docker/mysql-response-trace/app/internal/utils"
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 )

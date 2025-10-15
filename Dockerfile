@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends bpftool iproute
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY --from=builder /app/bin/mysql-connection-trace .
+COPY --from=builder /app/bin/mysql-response-trace .
 
 # eBPF programs require privileged mode & access to /sys
-CMD ["./mysql-connection-trace"]
+CMD ["./mysql-response-trace"]
