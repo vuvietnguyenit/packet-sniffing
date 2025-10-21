@@ -4,7 +4,12 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"git.itim.vn/docker/mysql-connection-trace/app/internal/ebpf"
+	"os"
+
+	"log/slog"
+
+	appflag "git.itim.vn/docker/mysql-response-trace/app/flag"
+	"git.itim.vn/docker/mysql-response-trace/app/internal/ebpf"
 	"github.com/spf13/cobra"
 )
 
@@ -25,9 +30,13 @@ to quickly create a Cobra application.`,
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-	runCmd.Flags().Int16P("port", "p", 3306, "MySQL server port you want to trace")
+	runCmd.PersistentFlags().Int16VarP(&appflag.Port, "port", "p", 3306, "MySQL server port you want to trace")
 }
 
 func runProgram() {
-	ebpf.RunEbpfProg()
+	err := ebpf.RunEbpfProg()
+	if err != nil {
+		slog.Error("failed to run eBPF program", err)
+		os.Exit(1)
+	}
 }

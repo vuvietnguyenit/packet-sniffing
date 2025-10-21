@@ -1,5 +1,5 @@
 ARCH := x86
-BINARY := mysql-connection-trace
+BINARY := mysql-response-trace
 BUILD_DIR := ./bin
 APP_DIR := ./app
 GOSRC     := ./$(APP_DIR)/cmd ./$(APP_DIR)/internal ./$(APP_DIR)/*.go
@@ -46,4 +46,7 @@ clean:
 
 # Build docker
 docker-build:
-	docker build -t ccr.itim.vn/admins/mysql-connection-trace:latest .
+	docker build -t $(ARGS) .
+
+docker-push:
+	docker push $(ARGS)
