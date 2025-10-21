@@ -8,7 +8,6 @@
 #define MYSQL_ERRMSG_SIZE                                                      \
   512 // we need to ensure that msg data of MySQL protocol does not exceed this
       // size
-#define PORT_FILTER 3306
 #define ERR_BUF_SIZE 32 // only need small amount to check for 0xFF
 
 struct data_t {
@@ -19,6 +18,13 @@ struct data_t {
   __u32 size;
   char msg[MYSQL_ERRMSG_SIZE];
 };
+
+struct {
+  __uint(type, BPF_MAP_TYPE_ARRAY);
+  __uint(max_entries, 1);
+  __type(key, u32);
+  __type(value, u16);
+} config_map SEC(".maps");
 
 struct {
   __uint(type, BPF_MAP_TYPE_RINGBUF);
@@ -67,7 +73,14 @@ int BPF_KPROBE(tcp_sendmsg, struct sock *sk, struct msghdr *msg, size_t size) {
   // Read socket info (CO-RE safe)
   data.sport = BPF_CORE_READ(sk, __sk_common.skc_num);
   data.dport = bpf_ntohs(BPF_CORE_READ(sk, __sk_common.skc_dport));
-  if (data.sport != PORT_FILTER)
+  // Define key of param that sent from user-space prog to bpf prog, lookup it
+  // in map and get the value.
+  u32 cfg_key = 0;
+  u16 *cfg_val = bpf_map_lookup_elem(&config_map, &cfg_key);
+  if (!cfg_val)
+    return 0;
+  u16 port = *cfg_val; // param is port number
+  if (data.sport != port)
     return 0;
 
   data.saddr = BPF_CORE_READ(sk, __sk_common.skc_rcv_saddr);
