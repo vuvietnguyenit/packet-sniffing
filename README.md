@@ -7,8 +7,6 @@ Only error messages returned by MySQL are reported - successful (OK) responses a
 
 ## How It Works
 
-![flow](static/img/image.png)
-
 ### Logical architecture diagram
 
 ```mermaid
