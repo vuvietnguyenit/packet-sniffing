@@ -9,6 +9,7 @@
   512 // we need to ensure that msg data of MySQL protocol does not exceed this
       // size
 #define ERR_BUF_SIZE 32 // only need small amount to check for 0xFF
+extern int LINUX_KERNEL_VERSION __kconfig;
 
 struct data_t {
   __u32 saddr;
@@ -63,10 +64,20 @@ static __always_inline int contains_ff(const unsigned char *data) {
   return 0;
 }
 
+/* flavor for older kernels (before 6.4) */
+struct iov_iter___v63 {
+  const struct iovec *iov;
+};
+
+/* flavor for newer kernels (6.4 and up) */
+struct iov_iter___v64 {
+  const struct iovec *__iov;
+};
+
 SEC("kprobe/tcp_sendmsg")
 int BPF_KPROBE(tcp_sendmsg, struct sock *sk, struct msghdr *msg, size_t size) {
   struct data_t data = {};
-  struct iov_iter iter = {};
+  struct iov_iter iter;
   const struct iovec *iovp = NULL;
   unsigned char mysql_err_buf_check[ERR_BUF_SIZE];
 
@@ -89,8 +100,13 @@ int BPF_KPROBE(tcp_sendmsg, struct sock *sk, struct msghdr *msg, size_t size) {
 
   // Read the iov_iter structure from msg->msg_iter
   bpf_core_read(&iter, sizeof(iter), &msg->msg_iter);
-  // Try to read __iov pointer inside iov_iter
-  bpf_core_read(&iovp, sizeof(*iovp), &iter.__iov);
+  // Try to read iov pointer inside iov_iter
+  // Need to write CO-RE to help compability between difference kernel. See:
+  // https://nakryiko.com/posts/bpf-portability-and-co-re/
+  if (LINUX_KERNEL_VERSION < KERNEL_VERSION(6, 4, 0))
+    iovp = BPF_CORE_READ((struct iov_iter___v63 *)&iter, iov);
+  else
+    iovp = BPF_CORE_READ((struct iov_iter___v64 *)&iter, __iov);
   if (!iovp)
     return 0;
 
