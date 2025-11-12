@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"testing"
 	"time"
 )
@@ -14,10 +13,7 @@ func TestReverseLookupCaching(t *testing.T) {
 
 	ip := IPToTest
 
-	names, err := r.ReverseLookup(ip)
-	if err != nil {
-		t.Fatalf("reverse lookup failed: %v", err)
-	}
+	names := r.ReverseLookup(ip)
 
 	if len(names) == 0 {
 		t.Errorf("expected at least one domain, got none")
@@ -34,10 +30,7 @@ func TestReverseLookupCaching(t *testing.T) {
 	}
 
 	// Call again to hit cache
-	cachedNames, err := r.ReverseLookup(ip)
-	if err != nil {
-		t.Errorf("unexpected error during cached lookup: %v", err)
-	}
+	cachedNames := r.ReverseLookup(ip)
 	if len(cachedNames) == 0 {
 		t.Errorf("expected cached result, got none")
 	}
@@ -54,7 +47,7 @@ func TestCacheLimitExceeded(t *testing.T) {
 	r.Caching.mu.Unlock()
 
 	// Attempt to add new item
-	_, _ = r.ReverseLookup("10.199.226.90")
+	_ = r.ReverseLookup("10.199.226.90")
 
 	r.Caching.mu.RLock()
 	if len(r.Caching.Data) > 1 {
@@ -95,10 +88,7 @@ func TestNoCaching(t *testing.T) {
 	defer r.StopCacheCleaner()
 
 	ip := IPToTest
-	_, err := r.ReverseLookup(ip)
-	if err != nil {
-		log.Printf("warning: DNS may fail in test env: %v", err)
-	}
+	_ = r.ReverseLookup(ip)
 
 	r.Caching.mu.RLock()
 	defer r.Caching.mu.RUnlock()

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -56,23 +55,22 @@ func NewResolver(nameserver string, cachingEnabled bool, cacheSize int, cacheDur
 }
 
 // ReverseLookup resolves IP to domain and caches it if successful
-func (r *Resolver) ReverseLookup(ip string) ([]string, error) {
+func (r *Resolver) ReverseLookup(ip string) []string {
 	// Check cache first
 	if r.Caching.Enabled {
 		r.Caching.mu.RLock()
 		if domains, ok := r.Caching.Data[ip]; ok {
 			r.Caching.mu.RUnlock()
 			slogger.Debug("cache hit for IP", "ip", ip, "domains", domains)
-			return domains, nil // get in cache
+			return domains // get in cache
 		}
 		r.Caching.mu.RUnlock()
 	}
 
 	ptrs, err := r.Resolver.LookupAddr(context.Background(), ip)
 	if err != nil {
-		return nil, fmt.Errorf("reverse lookup failed: %w", err)
+		return []string{ip}
 	}
-
 	// Update cache
 	if r.Caching.Enabled {
 		r.Caching.mu.Lock()
@@ -80,12 +78,12 @@ func (r *Resolver) ReverseLookup(ip string) ([]string, error) {
 
 		if len(r.Caching.Data) >= r.Caching.CacheSize {
 			slogger.Warn("cache size limit reached, skipping cache update", "size", r.Caching.CacheSize)
-			return ptrs, nil
+			return ptrs
 		}
 		r.Caching.Data[ip] = ptrs
 	}
 
-	return ptrs, nil
+	return ptrs
 }
 
 // startCacheCleaner runs a ticker to clear cache periodically
