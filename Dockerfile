@@ -12,8 +12,12 @@ COPY . .
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o mysql-error-echo .
 
 FROM debian:bookworm-slim
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     libpcap0.8 tcpdump wget curl netcat-traditional net-tools\
+#     && rm -rf /var/lib/apt/lists/*
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpcap0.8 \
+    libpcap0.8 dnsutils \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
