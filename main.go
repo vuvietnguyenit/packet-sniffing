@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
-var slogger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
+var slogger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+var Namespace = os.Getenv("NAMESPACE")
+var ClusterName = os.Getenv("CLUSTER_NAME")
 
-func main() {
-	cfg, err := ParseFlags()
-	if err != nil {
-		slogger.Error("invalid flags", "error", err)
-		os.Exit(1)
-	}
+func packetProcessing(cfg *Config) {
 	res := &Resolver{}
 	if cfg.UseDNS {
 		enableCache := true
@@ -35,6 +35,7 @@ func main() {
 	handle, err := pcap.OpenLive(cfg.Iface, snaplen, promisc, timeout)
 	if err != nil {
 		slogger.Error("error when open pcap live", "error", err.Error())
+		os.Exit(1)
 	}
 	defer handle.Close()
 	// Pre-filter capture packets *from* MySQL server
@@ -45,11 +46,13 @@ func main() {
 	slogger.Info("listening for MySQL error packets on", "iface", cfg.Iface, "port", cfg.Port)
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	for packet := range packetSource.Packets() {
-		processPacket(packet, res)
+		inspect(packet, res)
 	}
 }
 
-func processPacket(packet gopacket.Packet, res *Resolver) {
+var errRe = regexp.MustCompile(`#([A-Za-z0-9]{5})(.*)`)
+
+func inspect(packet gopacket.Packet, res *Resolver) {
 	tcpLayer := packet.Layer(layers.LayerTypeTCP)
 	ipv4Layer := packet.Layer(layers.LayerTypeIPv4)
 	if tcpLayer == nil || ipv4Layer == nil {
@@ -81,15 +84,51 @@ func processPacket(packet gopacket.Packet, res *Resolver) {
 				srcIP = strings.Join(res.ReverseLookup(srcIP), ",")
 				dstIp = strings.Join(res.ReverseLookup(dstIp), ",")
 			}
+			msg := string(payload[offset+4 : offset+4+length])
 			slogger.Info("MySQL ERR packet",
 				"src_ip", srcIP,
 				"src_port", tcp.SrcPort,
 				"dst_ip", dstIp,
 				"dst_port", tcp.DstPort,
 				"length", length,
-				"error_message", string(payload[offset+4:offset+4+length]),
+				"error_message", msg,
 			)
+			matches := errRe.FindStringSubmatch(msg)
+			if matches == nil {
+				slogger.Warn("unable to parse MySQL error code from message", "message", msg)
+				return
+			}
+			errorCode := matches[1]
+			IncreaseMySQLErrorCounter(prometheus.Labels{
+				"namespace":    Namespace,
+				"cluster_name": ClusterName,
+				"error_code":   errorCode,
+			})
+
 		}
 		offset += 4 + length
 	}
+}
+
+func main() {
+	cfg, err := ParseFlags()
+	if err != nil {
+		slogger.Error("invalid flags", "error", err)
+		os.Exit(1)
+	}
+	if cfg.Verbose {
+		slogger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	} else {
+		slogger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	}
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		packetProcessing(cfg)
+	})
+	if cfg.ExporterPort > 0 {
+		wg.Go(func() {
+			RunExporterMetricsServer(cfg.ExporterPort)
+		})
+	}
+	wg.Wait()
 }
