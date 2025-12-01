@@ -32,4 +32,4 @@ note.md
 
 
 # Skip binary build file
-./mysql-error-echo
+mysql-error-echo
