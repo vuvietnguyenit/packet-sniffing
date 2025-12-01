@@ -17,6 +17,7 @@ type Config struct {
 	Iface         string
 	Port          int
 	ExporterPort  int
+	Verbose       bool
 }
 
 func ParseFlags() (*Config, error) {
@@ -33,6 +34,7 @@ func ParseFlags() (*Config, error) {
 
 	// Exporter flag (required)
 	pflag.IntVar(&cfg.ExporterPort, "exporter-port", 2112, "Prometheus exporter port (required)")
+	pflag.BoolVarP(&cfg.Verbose, "verbose", "v", false, "Enable verbose logging")
 
 	pflag.Parse()
 
