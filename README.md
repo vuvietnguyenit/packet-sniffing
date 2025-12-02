@@ -3,6 +3,8 @@
 Observability tool that traces and inspects MySQL server error responses directly use **packet sniffing**, without modifying or instrumenting client applications. It capture packets sent from the MySQL server to clients and inspects them on-the-fly only for error responses.
 From there, we can see all of error responses in just one place, that is very helpful if we have too many backends/clients are connecting to server.
 
+With container environment, this tool usually is deployed as sidecar container, that will deploy beside mysql container. See example at [deployment.yaml](./docs/examples/deployment.yaml)
+
 **This tool we can use to work with mysqlrouter/mysql/mariadb**
 
 **Note: It only supports unencrypted MySQL traffic (when ssl-mode=DISABLE).**
@@ -57,5 +59,19 @@ Example results:
 [Metrics exporter](./docs/metrics.md)
 
 ## Build
-Require:
-- Golang ver >= 1.25
+
+### Binary
+
+Require: Golang ver >= 1.25
+
+#### Linux build
+
+```bash
+> GOOS=linux GOARCH=amd64 go build .
+```
+
+#### Docker image
+
+```bash
+> docker build . -t mysql-error-echo
+```

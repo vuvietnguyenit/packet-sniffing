@@ -10,7 +10,7 @@ MYSQL_ERROR_ECHO_METRIC_BLAH_BLAH
 
 The suffix after MYSQL_ERROR_ECHO_METRIC_ will be collected as label key of metrics.
 
-It is used to identify MySQL instance that is exposed metrics, and then we can use it to do label grouping in the future.
+It is used to identify MySQL instance that is exposed metrics, and then we can use it to do label grouping in the future. See [Example sidecar container](./examples/deployment.yaml#L87) if you're deploying it as sidecar container.
 
 ## Usage
 
@@ -26,7 +26,7 @@ It is used to identify MySQL instance that is exposed metrics, and then we can u
 ## Metrics
 
 ```sh
-> curl vunv-proj-sb.dev.virt:2112/metrics
+> curl localhost:2112/metrics
 # HELP mysql_error_response_count Number of MySQL errors received
 # TYPE mysql_error_response_count counter
 mysql_error_response_count{CLUSTER="mysql-prod",K8S_NAMESPACE="default",error_code="08S01"} 2
