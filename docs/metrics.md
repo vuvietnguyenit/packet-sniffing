@@ -1,33 +1,33 @@
 # Metric exporter
 
-This tool helps generate Prometheus monitoring metrics.
-
-Before exposing the metrics that are scraped by Prometheus server. We had provided two environment variables. They are used to identify MySQL cluster that is exposed metrics
-
-Environment variables:
+The labels of metric will be added by environment variables have the prefix MYSQL_ERROR_ECHO_METRIC_*. For example:
 
 ```text
-- CLUSTER_NAME 
-- NAMESPACE # will be good to provide it if your MySQL cluster running in Kubernetes namespace
+MYSQL_ERROR_ECHO_METRIC_CLUSTER_NAME
+MYSQL_ERROR_ECHO_METRIC_K8S_NAMESPACE
+MYSQL_ERROR_ECHO_METRIC_BLAH_BLAH
 ```
+
+The suffix after MYSQL_ERROR_ECHO_METRIC_ will be collected as label key of metrics.
+
+It is used to identify MySQL instance that is exposed metrics, and then we can use it to do label grouping in the future.
 
 ## Usage
 
 ```bash
-NAMESPACE=default CLUSTER_NAME=my-cluster ./mysql-error-echo --iface ens3 -v --exporter-port 9119
+> MYSQL_ERROR_ECHO_METRIC_CLUSTER=mysql-prod MYSQL_ERROR_ECHO_METRIC_K8S_NAMESPACE=default ./mysql-error-echo --iface ens3 -v
 
-{"time":"2025-12-01T16:34:28.314466776+07:00","level":"INFO","msg":"starting metrics server","port":9119}
-{"time":"2025-12-01T16:34:28.348339361+07:00","level":"INFO","msg":"listening for MySQL error packets on","iface":"ens3","port":3306}
-{"time":"2025-12-01T16:34:41.14820936+07:00","level":"DEBUG","msg":"scrape request","from":"10.196.6.35:52208","path":"/metrics"}
+{"time":"2025-12-02T11:13:19.84991977+07:00","level":"INFO","msg":"metric info","labels_included":["error_code","CLUSTER","K8S_NAMESPACE","NAMESPACE"]}
+{"time":"2025-12-02T11:13:19.850061864+07:00","level":"INFO","msg":"starting metrics server","port":2112}
+{"time":"2025-12-02T11:13:19.880302055+07:00","level":"INFO","msg":"listening for MySQL error packets on","iface":"ens3","port":3306}
 
 ```
 
 ## Metrics
 
-```text
-# curl localhost:9119/metrics
-# HELP mysql_error_response_count Number of MySQL error responses
+```sh
+> curl vunv-proj-sb.dev.virt:2112/metrics
+# HELP mysql_error_response_count Number of MySQL errors received
 # TYPE mysql_error_response_count counter
-# The cluster_name,namespace labels are mapped with env.
-mysql_error_response_count{cluster_name="my-cluster",error_code="08S01",namespace="default"} 1
+mysql_error_response_count{CLUSTER="mysql-prod",K8S_NAMESPACE="default",error_code="08S01"} 2
 ```

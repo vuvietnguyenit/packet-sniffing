@@ -11,12 +11,9 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 var slogger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-var Namespace = os.Getenv("NAMESPACE")
-var ClusterName = os.Getenv("CLUSTER_NAME")
 
 func packetProcessing(cfg *Config) {
 	res := &Resolver{}
@@ -99,11 +96,7 @@ func inspect(packet gopacket.Packet, res *Resolver) {
 				return
 			}
 			errorCode := matches[1]
-			IncreaseMySQLErrorCounter(prometheus.Labels{
-				"namespace":    Namespace,
-				"cluster_name": ClusterName,
-				"error_code":   errorCode,
-			})
+			IncreaseErrorCount(errorCode)
 
 		}
 		offset += 4 + length
