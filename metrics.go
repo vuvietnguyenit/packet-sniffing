@@ -35,7 +35,7 @@ func LoadMetricEnvs() {
 
 func DefineMetrics() {
 	once.Do(func() {
-		labelKeys := []string{"error_code"}
+		labelKeys := []string{"error_code", "state_code"}
 		if len(defaultLabels) == 0 {
 			slogger.Debug("environment labels isn't defined")
 		}
@@ -65,9 +65,10 @@ func mergeLabels(base prometheus.Labels, extra prometheus.Labels) prometheus.Lab
 	return out
 }
 
-func IncreaseErrorCount(errorCode string) {
+func IncreaseErrorCount(errorCode string, stateCode string) {
 	labels := mergeLabels(defaultLabels, prometheus.Labels{
 		"error_code": errorCode,
+		"state_code": stateCode,
 	})
 	errorCounter.With(labels).Inc()
 }

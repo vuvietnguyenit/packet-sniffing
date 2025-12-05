@@ -1,10 +1,11 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log/slog"
 	"os"
-	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -47,8 +48,6 @@ func packetProcessing(cfg *Config) {
 	}
 }
 
-var errRe = regexp.MustCompile(`#([A-Za-z0-9]{5})(.*)`)
-
 func inspect(packet gopacket.Packet, res *Resolver) {
 	tcpLayer := packet.Layer(layers.LayerTypeTCP)
 	ipv4Layer := packet.Layer(layers.LayerTypeIPv4)
@@ -68,39 +67,44 @@ func inspect(packet gopacket.Packet, res *Resolver) {
 		return
 	}
 
-	offset := 0
-	for offset+4 <= len(payload) {
-		length := int(payload[offset]) | int(payload[offset+1])<<8 | int(payload[offset+2])<<16
-		if offset+4+length > len(payload) {
-			break
-		} // incomplete packet
-		if payload[offset+4] == 0xff {
-			srcIP := ip.SrcIP.String()
-			dstIp := ip.DstIP.String()
-			if dnsResolved {
-				srcIP = strings.Join(res.ReverseLookup(srcIP), ",")
-				dstIp = strings.Join(res.ReverseLookup(dstIp), ",")
-			}
-			msg := string(payload[offset+4 : offset+4+length])
-			slogger.Info("MySQL ERR packet",
-				"src_ip", srcIP,
-				"src_port", tcp.SrcPort,
-				"dst_ip", dstIp,
-				"dst_port", tcp.DstPort,
-				"length", length,
-				"error_message", msg,
-			)
-			matches := errRe.FindStringSubmatch(msg)
-			if matches == nil {
-				slogger.Warn("unable to parse MySQL error code from message", "message", msg)
-				return
-			}
-			errorCode := matches[1]
-			IncreaseErrorCount(errorCode)
-
-		}
-		offset += 4 + length
+	// error code processing
+	oxffIdx := 4
+	if payload[oxffIdx] != 0xff {
+		return
 	}
+	errCodeByteArr := make([]byte, 2)
+	errCodeByteArr[0] = payload[oxffIdx+1]
+	errCodeByteArr[1] = payload[oxffIdx+2]
+
+	errCode := binary.LittleEndian.Uint16(errCodeByteArr)
+
+	// state code processing
+	statecodeIdx := 8 // start index at 7, but we need skip # character -> 7 + 1
+	stateCodeByteArr := make([]byte, 5)
+	for i := 0; i < len(stateCodeByteArr); i++ {
+		stateCodeByteArr[i] = payload[statecodeIdx+i]
+	}
+	srcIP := ip.SrcIP.String()
+	dstIp := ip.DstIP.String()
+	if dnsResolved {
+		srcIP = strings.Join(res.ReverseLookup(srcIP), ",")
+		dstIp = strings.Join(res.ReverseLookup(dstIp), ",")
+	}
+
+	msgIdx := 8 + 5 // from this index to remaining data
+	msg := payload[msgIdx:]
+	IncreaseErrorCount(strconv.Itoa(int(errCode)), string(stateCodeByteArr))
+
+	slogger.Info("MySQL ERR packet",
+		"src_ip", srcIP,
+		"src_port", tcp.SrcPort,
+		"dst_ip", dstIp,
+		"dst_port", tcp.DstPort,
+		"length", len(payload),
+		"state_code", string(stateCodeByteArr),
+		"err_code", errCode,
+		"error_message", string(msg),
+	)
 }
 
 func main() {
