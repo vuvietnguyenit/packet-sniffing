@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,6 +16,13 @@ import (
 )
 
 var slogger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+
+var alphaNumRegex = regexp.MustCompile(`^[A-Z0-9]+$`)
+
+// isAlphaNumASCIIRegex returns true only if the string matches [A-Z0-9]+
+func isValidStr(s string) bool {
+	return alphaNumRegex.MatchString(s)
+}
 
 func packetProcessing(cfg *Config) {
 	res := &Resolver{}
@@ -63,15 +71,18 @@ func inspect(packet gopacket.Packet, res *Resolver) {
 	tcp := tcpLayer.(*layers.TCP)
 	payload := tcp.Payload
 
-	if len(payload) == 0 {
+	// error code processing
+	oxffIdx := 4
+	if len(payload) < 14 {
+		return
+	}
+	if payload[oxffIdx] != 0xff { // not found ff byte
+		return
+	}
+	if payload[7] != 0x23 { // a # character
 		return
 	}
 
-	// error code processing
-	oxffIdx := 4
-	if payload[oxffIdx] != 0xff {
-		return
-	}
 	errCodeByteArr := make([]byte, 2)
 	errCodeByteArr[0] = payload[oxffIdx+1]
 	errCodeByteArr[1] = payload[oxffIdx+2]
@@ -81,9 +92,13 @@ func inspect(packet gopacket.Packet, res *Resolver) {
 	// state code processing
 	statecodeIdx := 8 // start index at 7, but we need skip # character -> 7 + 1
 	stateCodeByteArr := make([]byte, 5)
-	for i := 0; i < len(stateCodeByteArr); i++ {
+	for i := range stateCodeByteArr {
 		stateCodeByteArr[i] = payload[statecodeIdx+i]
 	}
+	if !isValidStr(string(stateCodeByteArr)) {
+		return
+	}
+
 	srcIP := ip.SrcIP.String()
 	dstIp := ip.DstIP.String()
 	if dnsResolved {

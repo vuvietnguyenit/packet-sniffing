@@ -17,7 +17,7 @@ FROM debian:bookworm-slim
 #     && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpcap0.8 dnsutils \
+    libpcap0.8 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

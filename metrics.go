@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -54,6 +55,14 @@ func DefineMetrics() {
 		)
 	})
 }
+
+func safeLabel(b string) string {
+	if utf8.ValidString(b) {
+		return string(b)
+	}
+	return "unknown" // return a fallback value
+}
+
 func mergeLabels(base prometheus.Labels, extra prometheus.Labels) prometheus.Labels {
 	out := prometheus.Labels{}
 	for k, v := range base {
@@ -67,8 +76,8 @@ func mergeLabels(base prometheus.Labels, extra prometheus.Labels) prometheus.Lab
 
 func IncreaseErrorCount(errorCode string, stateCode string) {
 	labels := mergeLabels(defaultLabels, prometheus.Labels{
-		"error_code": errorCode,
-		"state_code": stateCode,
+		"error_code": safeLabel(errorCode),
+		"state_code": safeLabel(stateCode),
 	})
 	errorCounter.With(labels).Inc()
 }
