@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: rootpassword
+  MYSQL_USER: appuser
+  MYSQL_PASSWORD: apppassword
+  MYSQL_DATABASE: appdb
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+data:
+  my.cnf: |
+    [mysqld]
+    default_authentication_plugin=mysql_native_password
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0.31
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3306
+              name: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_DATABASE
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: mysql-config
+              mountPath: /etc/mysql/conf.d
+          readinessProbe:
+            exec:
+              command:
+                - bash
+                - -c
+                - "mysqladmin ping -h 127.0.0.1 -p${MYSQL_ROOT_PASSWORD}"
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+              
+        # This tool will be deployed as a sidecar container beside mysql container
+        - name: mysql-response-error-trace
+          image: mysql-error-echo:latest
+          command:
+            - sh
+            - -c
+            - ./mysql-error-echo --port 6446 --iface eth0 --use-dns --exporter-port 2112 -v
+          resources:
+            limits:
+              memory: 250Mi
+              cpu: 100m
+            requests:
+              cpu: 50m
+              memory: 100Mi
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          # Define envs is included in metric label
+          env:
+            - name: MYSQL_ERROR_ECHO_METRIC_K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+            - name: MYSQL_ERROR_ECHO_METRIC_CLUSTER_NAME
+              value: "mysqlrouter-search"
+
+            - name: MYSQL_ERROR_ECHO_METRIC_K8S_POD
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+      volumes:
+        - name: mysql-data
+          emptyDir: {}
+        - name: mysql-config
+          configMap:
+            name: mysql-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
