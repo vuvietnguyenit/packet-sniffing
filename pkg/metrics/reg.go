@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"git.itim.vn/docker/redis-error-sniffer/utils"
+	"git.itim.vn/docker/packet-sniffer/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

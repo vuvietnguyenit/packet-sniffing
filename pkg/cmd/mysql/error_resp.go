@@ -8,10 +8,8 @@ import (
 	"strconv"
 	"sync"
 
-	"time"
-
-	"git.itim.vn/docker/redis-error-sniffer/pkg/metrics"
-	"git.itim.vn/docker/redis-error-sniffer/utils"
+	"git.itim.vn/docker/packet-sniffer/pkg/metrics"
+	"git.itim.vn/docker/packet-sniffer/utils"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
@@ -19,14 +17,10 @@ import (
 )
 
 type mysqlCmdFlags struct {
-	UseDNS        bool
-	CacheSize     int
-	CacheDuration time.Duration
-	Nameserver    string
-	Iface         string
-	Port          int
-	ExporterPort  int
-	Verbose       bool
+	Iface        string
+	Port         int
+	ExporterPort int
+	Verbose      bool
 }
 
 var cfg mysqlCmdFlags
@@ -59,17 +53,12 @@ func isValidStr(s string) bool {
 
 func init() {
 
-	MysqlErrorResponseCmd.Flags().BoolVar(&cfg.UseDNS, "use-dns", false, "Resolve IP to domain using reverse DNS lookup")
-	MysqlErrorResponseCmd.Flags().IntVar(&cfg.CacheSize, "cache-size", 4096, "DNS cache size")
-	MysqlErrorResponseCmd.Flags().DurationVar(&cfg.CacheDuration, "cache-duration", 5*time.Minute, "DNS cache expiration")
-	MysqlErrorResponseCmd.Flags().StringVar(&cfg.Nameserver, "nameserver", "", "Custom DNS server (e.g., 8.8.8.8:53)")
-
 	// Packet processing
-	MysqlErrorResponseCmd.Flags().StringVar(&cfg.Iface, "iface", "eth0", "Network interface to monitor")
-	MysqlErrorResponseCmd.Flags().IntVar(&cfg.Port, "port", 3306, "MySQL port to trace")
+	MysqlErrorResponseCmd.Flags().StringVarP(&cfg.Iface, "iface", "i", "eth0", "Network interface to monitor")
+	MysqlErrorResponseCmd.Flags().IntVarP(&cfg.Port, "port", "p", 3306, "MySQL port to trace")
 
 	// Exporter
-	MysqlErrorResponseCmd.Flags().IntVar(&cfg.ExporterPort, "exporter-port", 2112, "Prometheus exporter port")
+	MysqlErrorResponseCmd.Flags().IntVarP(&cfg.ExporterPort, "exporter-port", "e", 2112, "Prometheus exporter port")
 	MysqlErrorResponseCmd.Flags().BoolVarP(&cfg.Verbose, "verbose", "v", false, "Enable verbose logging")
 }
 
