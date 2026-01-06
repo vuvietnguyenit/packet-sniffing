@@ -27,22 +27,25 @@ flowchart LR
 
 ## Usage
 
-```bash
-# ./mysql-error-echo -h
---cache-duration duration   DNS cache expiration (default 5m0s)
-      --cache-size int            DNS cache size (default 4096)
-      --exporter-port int         Prometheus exporter port (required) (default 2112)
-      --iface string              Network interface to monitor (default "eth0")
-      --nameserver string         Custom DNS server (e.g., 8.8.8.8:53)
-      --port int                  MySQL port to trace (default 3306)
-      --use-dns                   Resolve IP to domain using reverse DNS lookup
-  -v, --verbose                   Enable verbose logging
+```sh
+./packet-sniffer mysql-error-response -h
+Record error responses are sent to mysql-client and export it as Prometheus exporter base on libpcap
+
+Usage:
+  packet-sniffer mysql-error-response [flags]
+
+Flags:
+  -e, --exporter-port int   Prometheus exporter port (default 2112)
+  -h, --help                help for mysql-error-response
+  -i, --iface string        Network interface to monitor (default "eth0")
+  -p, --port int            MySQL port to trace (default 3306)
+  -v, --verbose             Enable verbose logging
 ```
 
 For example, if you want to sniff error responses from MySQL server (on port 3306) at ens3 interface that are being sent back to clients.
 
 ```bash
-# ./mysql-error-echo --iface ens3 --port 3306
+# ./packet-sniffer -i ens3 -p 3306
 {"time":"2025-11-17T11:33:05.547757911+07:00","level":"INFO","msg":"listening for MySQL error packets on","iface":"ens3","port":3306}
 ```
 
@@ -57,21 +60,3 @@ Example results:
 ## Metrics
 
 [Metrics exporter](./metrics.md)
-
-## Build
-
-### Binary
-
-Require: Golang ver >= 1.25
-
-#### Linux build
-
-```bash
-> GOOS=linux GOARCH=amd64 go build .
-```
-
-#### Docker image
-
-```bash
-> docker build . -t mysql-error-echo
-```

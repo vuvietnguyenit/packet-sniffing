@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"sync"
 
-	"git.itim.vn/docker/redis-error-sniffer/pkg/metrics"
-	"git.itim.vn/docker/redis-error-sniffer/utils"
+	"git.itim.vn/docker/packet-sniffer/pkg/metrics"
+	"git.itim.vn/docker/packet-sniffer/utils"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"

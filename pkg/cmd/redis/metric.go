@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"git.itim.vn/docker/redis-error-sniffer/pkg/metrics"
+	"git.itim.vn/docker/packet-sniffer/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

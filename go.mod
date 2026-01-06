@@ -1,4 +1,4 @@
-module git.itim.vn/docker/redis-error-sniffer
+module git.itim.vn/docker/packet-sniffer
 
 go 1.25.5
 
