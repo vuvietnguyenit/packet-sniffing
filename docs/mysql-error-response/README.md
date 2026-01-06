@@ -1,6 +1,6 @@
 # sniff-mysql-error-response
 
-Observability tool that traces and inspects MySQL server error responses directly use **packet sniffing**, without modifying or instrumenting client applications. It capture packets sent from the MySQL server to clients and inspects them on-the-fly only for error responses.
+Traces and inspects MySQL server error responses directly use **packet sniffing**, without modifying or instrumenting client applications. It capture packets sent from the MySQL server to clients and inspects them on-the-fly only for error responses.
 From there, we can see all of error responses in just one place, that is very helpful if we have too many backends/clients are connecting to server.
 
 With container environment, this tool usually is deployed as sidecar container, that will deploy beside mysql container. See example at [mysql-deployment.yaml](../examples/mysql-deployment.yaml)
