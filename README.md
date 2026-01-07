@@ -1,5 +1,7 @@
 # Packet sniffer
 
+**"We can see what’s wrong without accessing the application client logs."**
+
 Packet sniffing tool is written by Go based on `gopacket/pcap`.
 
 See detail documentation at:
