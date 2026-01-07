@@ -5,7 +5,7 @@ Packet sniffing tool is written by Go based on `gopacket/pcap`.
 See detail documentation at:
 
 - [MySQL error response sniffer](./docs/mysql-error-response/README.md)
-- [Redis error response sniffer](./docs/mysql-error-response/README.md)
+- [Redis error response sniffer](./docs/redis-error-response/README.md)
 - And more ...
 
 

@@ -11,7 +11,7 @@ const (
 	mysqlErrorMetricName = "mysql_error_response_count"
 )
 
-var mysqlErrorLabels = []string{"error_code"}
+var mysqlErrorLabels = []string{"error_code", "state_code"}
 
 type mySQLMetric struct {
 	metric *prometheus.CounterVec
